@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Ai tools
+.claude
+.claudeignore
+.codexignore
