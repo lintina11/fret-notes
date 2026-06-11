@@ -1,5 +1,23 @@
-# Vue 3 + Vite
+# fret-notes
 
-This template should help get you started developing with Vue 3 in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+A Vue 3 web app for guitarists — visualize chords on an interactive fretboard, keyboard, chord chart, and tablature view.
 
-Learn more about IDE Support for Vue in the [Vue Docs Scaling up Guide](https://vuejs.org/guide/scaling-up/tooling.html#ide-support).
+## Features
+
+- Fretboard diagram
+- Piano keyboard view
+- Chord chart
+- Tablature display
+
+## Getting Started
+
+```bash
+npm install
+npm run dev
+```
+
+## Tech Stack
+
+- [Vue 3](https://vuejs.org/) with `<script setup>` SFCs
+- [Vite](https://vitejs.dev/)
+- Sass
