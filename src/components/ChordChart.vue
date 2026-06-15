@@ -1,6 +1,5 @@
 <template>
 	<div class="chord-chart">
-		<CapoSelect/>
 		<div class="wrapper" :style="{ width }">
 			<div class="string-row">
 				<button
@@ -30,7 +29,6 @@
 </template>
 <script setup>
 import { ref, reactive } from 'vue'
-import CapoSelect from './partials/CapoSelect.vue'
 
 defineProps({
 	width: {
@@ -41,7 +39,7 @@ defineProps({
 const emit = defineEmits(['change'])
 
 // 左到右對應第 6~1 弦，預設皆為空弦 (O)
-const stringStatus = reactive([true, true, true,true,true,true])
+const stringStatus = reactive([true, true, true, true, true, true])
 
 function handleStringSwitchClick(idx) {
 	stringStatus[idx] = !stringStatus[idx] 

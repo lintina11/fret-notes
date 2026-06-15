@@ -47,7 +47,7 @@ export function chartToNotes(strings, cells, capo = 0) {
   // cells 的 string 欄位：1 = 高音 e（第1弦） → stringIndex = 5
   for (const cell of cells) {
     const stringIndex = 6 - cell.string  // 轉成 0-based index（第6弦 = 0）
-    if (strings[stringIndex] === 'X') continue
+    if (!strings[stringIndex]) continue
 
     const { note, octave } = fretToNoteObj(stringIndex, cell.fret, capo)
     noteObjs.push({ note, octave, stringIndex, fret: cell.fret })
@@ -56,7 +56,7 @@ export function chartToNotes(strings, cells, capo = 0) {
   // 加入空弦（stringStatus 為 'O' 且 cells 中沒有該弦的按格）
   const pressedStrings = new Set(cells.map(c => 6 - c.string))
   for (let i = 0; i < 6; i++) {
-    if (strings[i] === 'X') continue
+    if (!strings[i]) continue
     if (pressedStrings.has(i)) continue
     const { note, octave } = fretToNoteObj(i, 0, capo)
     noteObjs.push({ note, octave, stringIndex: i, fret: 0 })
