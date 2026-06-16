@@ -66,12 +66,13 @@ const altChords = computed(() =>
   chordResultFormatted.value.filter(c => c.missing.length > 0 || c.extra.length > 0).slice(0, 2)
 )
 
-// ChordChart 每次使用者點格子或切換靜音時都會 emit change
+// ChordChart 每次使用者點格子、切換靜音或調整封閉指法時都會 emit change
 // strings：boolean[6]，false 表示該弦靜音（index 0 = 第6弦低音E）
 // cells：[{ string, fret }]，string 為 1–6（1 = 最細的高音e）
+// barre：{ width } 或 null，封閉指法涵蓋第 1～width 弦（右邊界固定在第1弦）
 // chartToNotes 內部會把靜音弦過濾掉，並將弦編號轉為正確的 stringIndex
-function onChordChange({ strings, cells }) {
-  const result = chartToNotes(strings, cells)
+function onChordChange({ strings, cells, barre }) {
+  const result = chartToNotes(strings, cells, 0, barre)
   noteObjs.value = result.noteObjs
   pitchClasses.value = result.pitchClasses
 }

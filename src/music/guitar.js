@@ -35,13 +35,15 @@ export function fretToNoteObj(stringIndex, fret, capo = 0, tuning = STANDARD_TUN
  *                            index 0 = 第6弦（低音），對應 ChordChart 左側
  * @param {Array}    cells    [{ string, fret }]，string 1–6（1 = 高音 e）
  * @param {number}   capo     移調夾
+ * @param {{ width: number } | null} barre  封閉指法。width 為涵蓋弦數（右邊界固定在第1弦），
+ *                                            例如 width=4 代表封閉第 1～4 弦；null 表示未使用封閉指法
  *
  * @returns {{
  *   noteObjs: Array<{ note: string, octave: number, stringIndex: number, fret: number }>,
  *   pitchClasses: Set<string>
  * }}
  */
-export function chartToNotes(strings, cells, capo = 0) {
+export function chartToNotes(strings, cells, capo = 0, barre = null) {
   const noteObjs = []
 
   // cells 的 string 欄位：1 = 高音 e（第1弦） → stringIndex = 5
@@ -53,13 +55,18 @@ export function chartToNotes(strings, cells, capo = 0) {
     noteObjs.push({ note, octave, stringIndex, fret: cell.fret })
   }
 
-  // 加入空弦（stringStatus 為 'O' 且 cells 中沒有該弦的按格）
+  // 補上沒有明確按格的弦：悶音 > 明確按格 > 封閉指法（fret 1）> 真正空弦（fret 0）
   const pressedStrings = new Set(cells.map(c => 6 - c.string))
   for (let i = 0; i < 6; i++) {
     if (!strings[i]) continue
     if (pressedStrings.has(i)) continue
-    const { note, octave } = fretToNoteObj(i, 0, capo)
-    noteObjs.push({ note, octave, stringIndex: i, fret: 0 })
+
+    const stringNumber = 6 - i  // 還原成 1~6（1 = 高音 e）
+    const isBarred = barre && stringNumber <= barre.width
+    const fret = isBarred ? 1 : 0
+
+    const { note, octave } = fretToNoteObj(i, fret, capo)
+    noteObjs.push({ note, octave, stringIndex: i, fret })
   }
 
   // 依絕對音高排序（低到高）

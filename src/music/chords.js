@@ -16,6 +16,7 @@ export const CHORD_PATTERNS = [
   { type: 'aug',   semitones: [0, 4, 8],         symbol: 'aug' },
   { type: 'sus2',  semitones: [0, 2, 7],         symbol: 'sus2' },
   { type: 'sus4',  semitones: [0, 5, 7],         symbol: 'sus4' },
+  { type: '7sus4', semitones: [0, 5, 7 ,10],     symbol: '7sus4' },
   { type: 'maj6',  semitones: [0, 4, 7, 9],      symbol: '6' },
   { type: 'min6',  semitones: [0, 3, 7, 9],      symbol: 'm6' },
   { type: 'add9',  semitones: [0, 4, 7, 14],     symbol: 'add9' },

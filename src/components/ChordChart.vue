@@ -1,5 +1,19 @@
 <template>
 	<div class="chord-chart">
+		<div class="barre-controls">
+			<button
+				type="button"
+				class="barre-toggle"
+				:class="{ active: barreActive }"
+				@click="toggleBarre"
+			>
+				使用封閉
+			</button>
+			<template v-if="barreActive">
+				<button type="button" :disabled="barreWidth >= 6" @click="moveBarreLeft">◀︎</button>
+				<button type="button" :disabled="barreWidth <= 2" @click="moveBarreRight">▶︎</button>
+			</template>
+		</div>
 		<div class="wrapper" :style="{ width }">
 			<div class="string-row">
 				<button
@@ -18,11 +32,17 @@
 					<div
 						class="cell"
 						:class="[{ left: index % 6 === 1 }, { right: index % 6 === 0 }]"
+						:style="getCellGridStyle(index)"
 						@click="handleCellClick(index)"
 					>
 						<span v-if="isPressed(index)" class="dot" />
 					</div>
 				</template>
+				<div
+					v-if="barreActive"
+					class="barre-bar"
+					:style="{ gridColumn: `${7 - barreWidth} / 7`, gridRow: '1' }"
+				/>
 			</div>
 		</div>
 	</div>
@@ -42,14 +62,44 @@ const emit = defineEmits(['change'])
 const stringStatus = reactive([true, true, true, true, true, true])
 
 function handleStringSwitchClick(idx) {
-	stringStatus[idx] = !stringStatus[idx] 
+	stringStatus[idx] = !stringStatus[idx]
+
+	// 弦被切換為靜音時，清除該弦上既有的按格紅點
+	// idx 為左到右 0~5（對應第 6~1 弦），cell.string 為 1~6（1 = 高音 e），故轉換為 6 - idx
+	if (!stringStatus[idx]) {
+		const targetString = 6 - idx
+		pressedCells.value = pressedCells.value.filter(p => p.string !== targetString)
+	}
+
+	emitChange()
+}
+
+// 封閉指法：固定按在 fret 1，width 為涵蓋弦數（右邊界固定在第1弦，最小寬度 2）
+const barreActive = ref(false)
+const barreWidth = ref(6)
+
+function toggleBarre() {
+	barreActive.value = !barreActive.value
+	emitChange()
+}
+
+function moveBarreLeft() {
+	if (barreWidth.value > 6) return
+	barreWidth.value++
+	emitChange()
+}
+
+function moveBarreRight() {
+	if (barreWidth.value <= 2) return
+	barreWidth.value--
 	emitChange()
 }
 
 function emitChange() {
 	emit('change', {
 		strings: [...stringStatus],
-		cells: pressedCells.value
+		cells: pressedCells.value,
+		barre: barreActive.value ? { width: barreWidth.value } : null
 	})
 }
 
@@ -68,18 +118,41 @@ function getCellPosition(index) {
   return { fret, string }
 }
 
+/**
+ * 將 cell 明確指定 grid 座標，避免 auto-placement 因 barre-bar 佔位而跑版
+ * column 1~6（左到右），row 即 fret（1~5）
+ */
+function getCellGridStyle(index) {
+  const { fret } = getCellPosition(index)
+  const column = index % 6 === 0 ? 6 : index % 6
+  return { gridColumn: String(column), gridRow: String(fret) }
+}
+
 function isPressed(index) {
   return pressedCells.value.some(p => p.index === index)
 }
 
 // 點擊 cell 時：記錄座標、新增紅點；重複點擊則移除；最多五個
+// 同一根弦最多只會發出一個音，新點擊的格子一律覆蓋該弦上既有的按格
 function handleCellClick(index) {
   const existing = pressedCells.value.findIndex(p => p.index === index)
   if (existing !== -1) {
     pressedCells.value.splice(existing, 1)
-  } else if (pressedCells.value.length < 5) {
-    pressedCells.value.push({ index, ...getCellPosition(index) })
+    emitChange()
+    return
   }
+
+  if (pressedCells.value.length >= 5) return
+
+  const cell = { index, ...getCellPosition(index) }
+  const sameStringIdx = pressedCells.value.findIndex(p => p.string === cell.string)
+
+  if (sameStringIdx !== -1) {
+    pressedCells.value.splice(sameStringIdx, 1, cell)
+  } else {
+    pressedCells.value.push(cell)
+  }
+
 	emitChange()
 }
 
@@ -88,10 +161,35 @@ function handleCellClick(index) {
 </script>
 <style scoped lang="scss">
 .chord-chart {
+	.barre-controls {
+		display: flex;
+		gap: 8px;
+		margin-bottom: 8px;
+
+		button {
+			cursor: pointer;
+		}
+	}
+
 	.string-row,
 	.fret-grid {
 		display: grid;
 		grid-template-columns: repeat(6, 1fr);
+	}
+
+	.fret-grid {
+		position: relative;
+	}
+
+	.barre-bar {
+		grid-row: 1;
+		align-self: center;
+		height: 60%;
+		margin: 0 4px;
+		background-color: rgba(255, 99, 99, 0.4);
+		border-radius: 999px;
+		pointer-events: none;
+		z-index: 1;
 	}
 
 	.string-switch {
