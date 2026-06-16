@@ -52,6 +52,8 @@ export function detectChord(pitchClasses) {
       // 計算吻合數與缺少音
       const matched = patternNotes.filter(n => pcs.has(n))
       const missing = patternNotes.filter(n => !pcs.has(n))
+      // 你按的音中，不在公式內的「多餘音」
+      const extra = [...pcs].filter(n => !patternNotes.includes(n))
 
       // 至少要有根音，且吻合率 >= 2/3
       if (!pcs.has(root)) continue
@@ -63,6 +65,7 @@ export function detectChord(pitchClasses) {
         symbol: pattern.symbol,
         name: `${root}${pattern.symbol}`,
         missing,
+        extra,
         score: matched.length - missing.length * 0.5,
       })
     }

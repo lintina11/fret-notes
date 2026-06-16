@@ -1,15 +1,14 @@
 <template>
   <div class="app">
     <ChordChart width="200px" @change="onChordChange" />
-    組成音：{{ pitchClassesList }}
+    {{ pitchClassesList }}
     <div class="chord-result">
-      <template v-if="chordResult.length">
-        <span class="chord-name">{{ chordResult[0].name }}</span>
-        <span v-if="chordResult.length > 1" class="chord-alt">
-          也可能是 {{ chordResult.slice(1, 3).map(c => c.name).join('、') }}
+      <template v-if="chordResultFormatted.length">
+        <span v-for="c in primaryChords" :key="c.name" class="chord-name">
+          {{ c.displayName }}
         </span>
-        <span class="chord-alt">
-          根音{{ chordResult[0].root }}
+        <span v-if="altChords.length" class="chord-alt">
+          也可能是 {{ altChords.map(c => c.displayName).join('、') }}
         </span>
       </template>
       <span v-else-if="!hasNotes" class="chord-unknown">無法辨識和弦</span>
@@ -24,6 +23,7 @@ import { chartToNotes } from './music/guitar.js'
 import { detectChord } from './music/chords.js'
 
 // noteObjs：含八度資訊的完整音符陣列，例如 [{ note: 'E', octave: 2, stringIndex: 0, fret: 0 }, ...]
+// chartToNotes 已依絕對音高由低到高排序，所以 noteObjs[0] 永遠是最低音
 const noteObjs = ref([])
 
 // pitchClasses：去除八度的音名集合，只需要「有哪些音」，例如 Set(['E', 'A', 'D'])。
@@ -33,6 +33,10 @@ const pitchClassesList = computed(() => [...pitchClasses.value].join('、'))
 // 只要有任何音（即使只有一個音），就顯示「無法辨識」提示
 const hasNotes = computed(() => pitchClasses.value.size > 0)
 
+// 最低音（bass note）：從排序後的 noteObjs[0] 取得音名
+// 用於判斷是否為轉位和弦（root ≠ bass）
+const bassNote = computed(() => noteObjs.value[0]?.note ?? null)
+
 // 和弦辨識結果（已依分數由高到低排序）
 // - 少於 2 個不同音名時不嘗試辨識（單音無法構成和弦）
 // - detectChord 回傳所有符合條件的候選，第 0 筆為最佳匹配
@@ -40,6 +44,27 @@ const chordResult = computed(() => {
   if (pitchClasses.value.size < 2) return []
   return detectChord(pitchClasses.value)
 })
+
+// 加上 slash chord 顯示名稱，分數排序維持 detectChord 原本結果不變
+// - root === bass：根音位置，displayName 同 name（例如 'Am'）
+// - root !== bass：轉位，displayName 加上 /bass（例如 'Am/C'）
+const chordResultFormatted = computed(() => {
+  const bass = bassNote.value
+  return chordResult.value.map(c => ({
+    ...c,
+    displayName: c.root === bass ? c.name : `${c.name}/${bass}`,
+    isInversion: c.root !== bass,
+  }))
+})
+
+// 完全吻合（無缺音 且 無多餘音）→ chord-name 全部列出
+// 有缺音或有多餘音 → 下放到 chord-alt，最多顯示 2 個
+const primaryChords = computed(() =>
+  chordResultFormatted.value.filter(c => c.missing.length === 0 && c.extra.length === 0)
+)
+const altChords = computed(() =>
+  chordResultFormatted.value.filter(c => c.missing.length > 0 || c.extra.length > 0).slice(0, 2)
+)
 
 // ChordChart 每次使用者點格子或切換靜音時都會 emit change
 // strings：boolean[6]，false 表示該弦靜音（index 0 = 第6弦低音E）
